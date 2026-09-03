@@ -74,7 +74,7 @@ It disables OpenTelemetry by default.
 
 | Tool | Description |
 |------|-------------|
-| `search_recipes` | Search recipes by keyword |
+| `search_recipes` | Search recipes by keyword, ingredients, rating, or difficulty |
 | `get_recipe_details` | Get full recipe details by ID |
 | `get_user_info` | View your account profile |
 | `get_active_subscription` | View active subscription status |
@@ -109,6 +109,26 @@ It disables OpenTelemetry by default.
 | `tick_off_items` | Mark ingredient items as owned |
 | `untick_items` | Mark ingredient items as not owned |
 | `clear_shopping_list` | Clear the entire shopping list |
+
+### Recipe Search Filters
+
+`search_recipes` accepts these optional filters in addition to `query` and `page`:
+
+| Parameter | Values | Behavior |
+|-----------|--------|----------|
+| `include_ingredients` | Array of ingredient names in the Cookidoo locale | Every result must include all listed ingredients. |
+| `exclude_ingredients` | Array of ingredient names in the Cookidoo locale | Results containing any listed ingredient are omitted. |
+| `min_rating` | Number from `0` to `5` | Returns recipes with at least that star rating. |
+| `difficulty` | `easy`, `medium`, or `advanced` | Filters by Cookidoo's internal difficulty values. |
+| `sort_by` | `relevance`, `name`, `shortest_preparation_time`, `shortest_total_time`, `newest`, `best_rated`, `trending` | Sorts results using Cookidoo's official search indexes. |
+| `countries` | Country codes such as `de`, `at`, `ch`, `it` | Limits recipes by country of origin. Defaults to configured country. |
+| `languages` | Language codes such as `de`, `en`, `es`, `it` | Limits recipes by available language. |
+| `categories` | `pasta_and_rice`, `main_dishes_meat`, `main_dishes_fish`, `main_dishes_vegetarian`, and other schema values | Limits recipes to category names used by the MCP. |
+| `tm_models` | `TM31`, `TM5`, `TM6`, `TM7` | Includes recipes compatible with any selected model. |
+| `accessories` | `blade_cover`, `cutter`, `cooking_station`, `peeler`, `thermomix_sensor` | Includes recipes requiring any selected accessory. |
+| `max_preparation_time` | `15`, `30`, `45` | Maximum preparation time in minutes. |
+| `max_total_time` | `15`, `30`, `45` | Maximum total time in minutes. |
+| `portions` | `1`, `2`, `4`, `6`, `8` | Exact portion count; `8` means eight or more. |
 
 ## Credits
 

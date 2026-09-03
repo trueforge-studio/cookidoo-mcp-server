@@ -74,10 +74,60 @@ cookidoo_session = CookidooSession()
 
 algolia_cache = {"app_id": None, "api_key": None, "index": None, "valid_until": 0}
 
+SEARCH_SORTS = {
+    "relevance": None,
+    "name": "by-title-asc",
+    "shortest_preparation_time": "by-preparationTime-asc",
+    "shortest_total_time": "by-totalTime-asc",
+    "newest": "by-publishedAt-desc",
+    "best_rated": "by-rating-desc",
+    "trending": "by-trend",
+}
 
-async def search_recipes_via_algolia(query: str, page: int, country: str) -> dict[str, Any]:
+CATEGORY_IDS = {
+    "starters": "VrkNavCategory-RPF-001",
+    "soups": "VrkNavCategory-RPF-002",
+    "pasta_and_rice": "VrkNavCategory-RPF-003",
+    "main_dishes_meat": "VrkNavCategory-RPF-004",
+    "main_dishes_fish": "VrkNavCategory-RPF-005",
+    "main_dishes_vegetarian": "VrkNavCategory-RPF-006",
+    "main_dishes_other": "VrkNavCategory-RPF-007",
+    "side_dishes": "VrkNavCategory-RPF-008",
+    "sweet_sauces_dips_spreads": "VrkNavCategory-RPF-009",
+    "desserts_and_sweets": "VrkNavCategory-RPF-011",
+    "savory_baking": "VrkNavCategory-RPF-012",
+    "sweet_baking": "VrkNavCategory-RPF-013",
+    "breads_and_rolls": "VrkNavCategory-RPF-014",
+    "drinks": "VrkNavCategory-RPF-015",
+    "basics": "VrkNavCategory-RPF-016",
+    "baby_food": "VrkNavCategory-RPF-017",
+    "savory_sauces_dips_spreads": "VrkNavCategory-RPF-018",
+    "breakfast": "VrkNavCategory-RPF-019",
+    "snacks": "VrkNavCategory-RPF-020",
+    "menus": "VrkNavigationCategory-rpf-000001303095",
+}
+
+
+async def search_recipes_via_algolia(
+    query: str,
+    page: int,
+    country: str,
+    language: str,
+    include_ingredients: list[str] | None = None,
+    exclude_ingredients: list[str] | None = None,
+    min_rating: float | None = None,
+    difficulty: str | None = None,
+    sort_by: str = "relevance",
+    countries: list[str] | None = None,
+    languages: list[str] | None = None,
+    categories: list[str] | None = None,
+    tm_models: list[str] | None = None,
+    accessories: list[str] | None = None,
+    max_preparation_time: int | None = None,
+    max_total_time: int | None = None,
+    portions: int | None = None,
+) -> dict[str, Any]:
     """Search Cookidoo through the same public Algolia endpoint as the web UI."""
-    language = "de-DE"
     now = time.time()
     if not algolia_cache["api_key"] or algolia_cache["valid_until"] <= now:
         config_url = (
@@ -101,7 +151,9 @@ async def search_recipes_via_algolia(query: str, page: int, country: str) -> dic
             index=props["algoliaIndices"]["recipes"]["relevance"],
         )
 
-    algolia_url = f"https://{algolia_cache['app_id']}-dsn.algolia.net/1/indexes/{algolia_cache['index']}/query"
+    sort_suffix = SEARCH_SORTS[sort_by]
+    index = algolia_cache["index"] if sort_suffix is None else f"{algolia_cache['index']}-{sort_suffix}"
+    algolia_url = f"https://{algolia_cache['app_id']}-dsn.algolia.net/1/indexes/{index}/query"
     headers = {
         "X-Algolia-Application-Id": algolia_cache["app_id"],
         "X-Algolia-API-Key": algolia_cache["api_key"],
@@ -111,8 +163,42 @@ async def search_recipes_via_algolia(query: str, page: int, country: str) -> dic
         "query": query,
         "page": page,
         "hitsPerPage": 20,
-        "filters": f"countries:{country}",
     }
+    country_values = countries or [country]
+    facet_filters = []
+    if country_values:
+        facet_filters.append([f"countries:{value.lower()}" for value in country_values])
+    if languages:
+        facet_filters.append([f"language:{value.lower()}" for value in languages])
+    if difficulty:
+        facet_filters.append(f"difficulty:{difficulty}")
+    if categories:
+        facet_filters.append([f"categories.id:{CATEGORY_IDS[category]}" for category in categories])
+    if tm_models:
+        facet_filters.append([f"tmversion:{model}" for model in tm_models])
+    if accessories:
+        facet_filters.append([f"accessories:{accessory}" for accessory in accessories])
+    facet_filters.extend(
+        f"ingredients.filterTitles:{ingredient}"
+        for ingredient in include_ingredients or []
+    )
+    facet_filters.extend(
+        f"ingredients.filterTitles:-{ingredient}"
+        for ingredient in exclude_ingredients or []
+    )
+    if facet_filters:
+        payload["facetFilters"] = facet_filters
+    if min_rating is not None:
+        payload["numericFilters"] = [f"normalizedRating >= {min_rating}"]
+    numeric_filters = payload.get("numericFilters", [])
+    if max_preparation_time is not None:
+        numeric_filters.append(f"preparationTime <= {max_preparation_time * 60}")
+    if max_total_time is not None:
+        numeric_filters.append(f"totalTime <= {max_total_time * 60}")
+    if portions is not None:
+        numeric_filters.append(f"portions {'>=' if portions == 8 else '='} {portions}")
+    if numeric_filters:
+        payload["numericFilters"] = numeric_filters
     async with aiohttp.ClientSession() as session:
         async with session.post(algolia_url, headers=headers, json=payload) as response:
             response.raise_for_status()
@@ -163,6 +249,73 @@ async def list_tools() -> list[Tool]:
                 "properties": {
                     "query": {"type": "string", "description": "Search query for recipes"},
                     "page": {"type": "integer", "description": "Page number (0-indexed)", "default": 0},
+                    "include_ingredients": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Ingredient names that every result must contain. Use names in the configured Cookidoo locale, such as 'Seitan' or 'Zwiebeln' for DE.",
+                    },
+                    "exclude_ingredients": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Ingredient names that results must not contain. Use names in the configured Cookidoo locale.",
+                    },
+                    "min_rating": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 5,
+                        "description": "Minimum Cookidoo rating from 0 to 5 stars.",
+                    },
+                    "difficulty": {
+                        "type": "string",
+                        "enum": ["easy", "medium", "advanced"],
+                        "description": "Cookidoo difficulty: easy, medium, or advanced.",
+                    },
+                    "sort_by": {
+                        "type": "string",
+                        "enum": list(SEARCH_SORTS),
+                        "default": "relevance",
+                        "description": "Result order: relevance, name, shortest_preparation_time, shortest_total_time, newest, best_rated, or trending.",
+                    },
+                    "countries": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Recipe origin country codes, such as de, at, ch, or it. Defaults to the configured country.",
+                    },
+                    "languages": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Recipe language codes available in the selected country index, such as de, en, es, or it.",
+                    },
+                    "categories": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": list(CATEGORY_IDS)},
+                        "description": "Recipe category names. Examples: pasta_and_rice, main_dishes_meat, main_dishes_fish, main_dishes_vegetarian.",
+                    },
+                    "tm_models": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": ["TM31", "TM5", "TM6", "TM7"]},
+                        "description": "Compatible Thermomix models. Results matching any selected model are included.",
+                    },
+                    "accessories": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": ["blade_cover", "cutter", "cooking_station", "peeler", "thermomix_sensor"]},
+                        "description": "Required Cookidoo accessory IDs. Results matching any selected accessory are included.",
+                    },
+                    "max_preparation_time": {
+                        "type": "integer",
+                        "enum": [15, 30, 45],
+                        "description": "Maximum preparation time in minutes. Official UI values: 15, 30, or 45.",
+                    },
+                    "max_total_time": {
+                        "type": "integer",
+                        "enum": [15, 30, 45],
+                        "description": "Maximum total time in minutes. Official UI values: 15, 30, or 45.",
+                    },
+                    "portions": {
+                        "type": "integer",
+                        "enum": [1, 2, 4, 6, 8],
+                        "description": "Portion count. Values 1, 2, 4, and 6 match exactly; 8 means 8 or more portions.",
+                    },
                 },
                 "required": ["query"],
             },
@@ -418,10 +571,34 @@ async def _execute_tool(name: str, arguments: dict[str, Any], cd: Cookidoo) -> l
 
     if name == "search_recipes":
         country = cd.localization.country_code.lower()
+        min_rating = arguments.get("min_rating")
+        if min_rating is not None and not 0 <= min_rating <= 5:
+            raise ValueError("min_rating must be between 0 and 5")
+        sort_by = arguments.get("sort_by", "relevance")
+        if sort_by not in SEARCH_SORTS:
+            raise ValueError(f"sort_by must be one of: {', '.join(SEARCH_SORTS)}")
+        categories = arguments.get("categories")
+        invalid_categories = set(categories or []) - CATEGORY_IDS.keys()
+        if invalid_categories:
+            raise ValueError(f"Unknown categories: {', '.join(sorted(invalid_categories))}")
         results = await search_recipes_via_algolia(
             arguments["query"],
             arguments.get("page", 0),
             country,
+            cd.localization.language,
+            arguments.get("include_ingredients"),
+            arguments.get("exclude_ingredients"),
+            min_rating,
+            arguments.get("difficulty"),
+            sort_by,
+            arguments.get("countries"),
+            arguments.get("languages"),
+            categories,
+            arguments.get("tm_models"),
+            arguments.get("accessories"),
+            arguments.get("max_preparation_time"),
+            arguments.get("max_total_time"),
+            arguments.get("portions"),
         )
         span.set_attribute("cookidoo.query", arguments["query"])
         span.set_attribute("cookidoo.page", arguments.get("page", 0))
