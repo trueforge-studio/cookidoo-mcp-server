@@ -1,22 +1,4 @@
 services:
-  cookidoo-web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    init: true
-    ports:
-      - "127.0.0.1:8080:8080"
-    read_only: true
-    tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-    pids_limit: 128
-    mem_limit: 512m
-    restart: "no"
-
   cookidoo-mcp:
     build:
       context: .

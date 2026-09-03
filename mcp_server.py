@@ -127,7 +127,7 @@ async def search_recipes_via_algolia(
     max_total_time: int | None = None,
     portions: int | None = None,
 ) -> dict[str, Any]:
-    """Search Cookidoo through the same public Algolia endpoint as the web UI."""
+    """Search Cookidoo through its public Algolia search endpoint."""
     now = time.time()
     if not algolia_cache["api_key"] or algolia_cache["valid_until"] <= now:
         config_url = (

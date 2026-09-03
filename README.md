@@ -1,6 +1,6 @@
-# Cookidoo MCP Server + Web UI
+# Cookidoo MCP Server
 
-An MCP server for the Cookidoo (Thermomix) platform with a simple web interface.
+An MCP server for the Cookidoo (Thermomix) platform.
 
 ## Setup
 
@@ -16,15 +16,7 @@ COOKIDOO_PASSWORD=yourpassword
 
 ## Usage
 
-### Option 1: Web UI (recommended for interactive use)
-
-```bash
-python bridge_server.py
-```
-
-Open http://localhost:8080 in your browser. Enter your Cookidoo credentials and click Connect.
-
-### Option 2: MCP stdio server (for AI assistants like Claude)
+### MCP stdio server (for AI assistants like Claude)
 
 ```bash
 python mcp_server.py
