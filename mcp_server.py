@@ -14,20 +14,11 @@ import aiohttp
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 from mcp.server.stdio import stdio_server
-from opentelemetry import trace
-from opentelemetry.trace import StatusCode
 
 from cookidoo_api import Cookidoo, CookidooConfig, CookidooLocalizationConfig
 from cookidoo_api.types import CookidooAdditionalItem, CookidooIngredientItem
-from otel_setup import setup_tracing
 
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# OpenTelemetry
-# ---------------------------------------------------------------------------
-
-tracer = setup_tracing()
 
 # ---------------------------------------------------------------------------
 # Cookidoo Session Management
@@ -566,8 +557,7 @@ async def list_tools() -> list[Tool]:
 # ---------------------------------------------------------------------------
 
 async def _execute_tool(name: str, arguments: dict[str, Any], cd: Cookidoo) -> list[TextContent]:
-    """Run the requested tool and enrich the current span with tool-specific attributes."""
-    span = trace.get_current_span()
+    """Run the requested tool."""
 
     if name == "search_recipes":
         country = cd.localization.country_code.lower()
@@ -600,16 +590,10 @@ async def _execute_tool(name: str, arguments: dict[str, Any], cd: Cookidoo) -> l
             arguments.get("max_total_time"),
             arguments.get("portions"),
         )
-        span.set_attribute("cookidoo.query", arguments["query"])
-        span.set_attribute("cookidoo.page", arguments.get("page", 0))
-        span.set_attribute("cookidoo.result_count", results["totalHits"])
         return [TextContent(type="text", text=json_text(results))]
 
     elif name == "get_recipe_details":
         recipe = await cd.get_recipe_details(arguments["recipe_id"])
-        span.set_attribute("cookidoo.recipe_id", arguments["recipe_id"])
-        if isinstance(recipe, dict):
-            span.set_attribute("cookidoo.recipe_name", str(recipe.get("name", "")))
         return [TextContent(type="text", text=json_text(recipe))]
 
     elif name == "get_user_info":
@@ -620,7 +604,6 @@ async def _execute_tool(name: str, arguments: dict[str, Any], cd: Cookidoo) -> l
 
     elif name == "get_managed_collections":
         collections = await cd.get_managed_collections(arguments.get("page", 0))
-        span.set_attribute("cookidoo.collection_count", len(collections) if collections else 0)
         return [TextContent(type="text", text=json_text(collections))]
 
     elif name == "add_recipe_to_collection":
@@ -628,8 +611,6 @@ async def _execute_tool(name: str, arguments: dict[str, Any], cd: Cookidoo) -> l
             arguments["collection_id"],
             [arguments["recipe_id"]],
         )
-        span.set_attribute("cookidoo.recipe_id", arguments["recipe_id"])
-        span.set_attribute("cookidoo.collection_id", arguments["collection_id"])
         return [TextContent(type="text", text=json_text(result))]
 
     elif name == "get_custom_collections":
@@ -682,19 +663,15 @@ async def _execute_tool(name: str, arguments: dict[str, Any], cd: Cookidoo) -> l
 
     elif name == "get_shopping_list":
         items = await cd.get_shopping_list_recipes()
-        span.set_attribute("cookidoo.item_count", len(items) if items else 0)
         return [TextContent(type="text", text=json_text(items))]
 
     elif name == "get_ingredient_items":
         items = await cd.get_ingredient_items()
-        span.set_attribute("cookidoo.item_count", len(items) if items else 0)
         return [TextContent(type="text", text=json_text(items))]
 
     elif name == "add_recipes_to_shopping_list":
         recipe_ids = arguments["recipe_ids"]
         result = await cd.add_ingredient_items_for_recipes(recipe_ids)
-        span.set_attribute("cookidoo.recipe_count", len(recipe_ids))
-        span.set_attribute("cookidoo.recipe_ids", ", ".join(recipe_ids))
         return [TextContent(type="text", text=json_text(result))]
 
     elif name == "remove_recipes_from_shopping_list":
@@ -757,24 +734,17 @@ async def _execute_tool(name: str, arguments: dict[str, Any], cd: Cookidoo) -> l
         while current_date <= end_date:
             planned.extend(await cd.get_recipes_in_calendar_week(current_date))
             current_date += timedelta(days=7)
-        span.set_attribute("cookidoo.start_date", arguments["start_date"])
-        span.set_attribute("cookidoo.end_date", arguments["end_date"])
-        span.set_attribute("cookidoo.result_count", len(planned) if planned else 0)
         return [TextContent(type="text", text=json_text(planned))]
 
     elif name == "schedule_recipes":
         scheduled_date = date.fromisoformat(arguments["date"])
         recipe_ids = arguments["recipe_ids"]
         result = await cd.add_recipes_to_calendar(scheduled_date, recipe_ids)
-        span.set_attribute("cookidoo.date", arguments["date"])
-        span.set_attribute("cookidoo.recipe_count", len(recipe_ids))
         return [TextContent(type="text", text=json_text(result))]
 
     elif name == "unschedule_recipe":
         scheduled_date = date.fromisoformat(arguments["date"])
         result = await cd.remove_recipe_from_calendar(scheduled_date, arguments["recipe_id"])
-        span.set_attribute("cookidoo.date", arguments["date"])
-        span.set_attribute("cookidoo.recipe_id", arguments["recipe_id"])
         return [TextContent(type="text", text=json_text(result))]
 
     elif name == "schedule_custom_recipes":
@@ -796,8 +766,6 @@ async def _execute_tool(name: str, arguments: dict[str, Any], cd: Cookidoo) -> l
             CookidooIngredientItem(id=item.id, name=item.name, description=item.description, is_owned=True)
             for item in all_items if item.id in item_ids
         ]
-        span.set_attribute("cookidoo.requested_count", len(item_ids))
-        span.set_attribute("cookidoo.updated_count", len(items_to_update))
         if items_to_update:
             result = await cd.edit_ingredient_items_ownership(items_to_update)
             return [TextContent(type="text", text=json_text({"updated": len(result), "items": result}))]
@@ -810,8 +778,6 @@ async def _execute_tool(name: str, arguments: dict[str, Any], cd: Cookidoo) -> l
             CookidooIngredientItem(id=item.id, name=item.name, description=item.description, is_owned=False)
             for item in all_items if item.id in item_ids
         ]
-        span.set_attribute("cookidoo.requested_count", len(item_ids))
-        span.set_attribute("cookidoo.updated_count", len(items_to_update))
         if items_to_update:
             result = await cd.edit_ingredient_items_ownership(items_to_update)
             return [TextContent(type="text", text=json_text({"updated": len(result), "items": result}))]
@@ -831,35 +797,13 @@ async def _execute_tool(name: str, arguments: dict[str, Any], cd: Cookidoo) -> l
 
 @app.call_tool()
 async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
-    start = time.time()
-
-    with tracer.start_as_current_span(
-        f"mcp.tool.{name}",
-        attributes={
-            "mcp.tool.name": name,
-            "mcp.server": "cookidoo-mcp",
-        },
-    ) as span:
-        try:
-            await cookidoo_session.ensure_connected()
-            cd = cookidoo_session.cookidoo
-
-            result = await _execute_tool(name, arguments, cd)
-
-            duration_ms = int((time.time() - start) * 1000)
-            span.set_attribute("mcp.tool.duration_ms", duration_ms)
-            span.set_attribute("mcp.tool.success", True)
-            return result
-
-        except Exception as e:
-            duration_ms = int((time.time() - start) * 1000)
-            span.set_attribute("mcp.tool.duration_ms", duration_ms)
-            span.set_attribute("mcp.tool.success", False)
-            span.set_attribute("error.message", str(e))
-            span.set_attribute("error.type", type(e).__name__)
-            span.set_status(StatusCode.ERROR, str(e))
-            logger.exception("Tool call failed")
-            return [TextContent(type="text", text=f"Error: {e}")]
+    try:
+        await cookidoo_session.ensure_connected()
+        cd = cookidoo_session.cookidoo
+        return await _execute_tool(name, arguments, cd)
+    except Exception as e:
+        logger.exception("Tool call failed")
+        return [TextContent(type="text", text=f"Error: {e}")]
 
 
 # ---------------------------------------------------------------------------

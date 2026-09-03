@@ -60,7 +60,6 @@ Configure Claude Desktop to start the container through Docker Compose:
 ```
 
 The `cookidoo-mcp` service communicates over stdio and does not publish a port.
-It disables OpenTelemetry by default.
 
 ## Available Tools
 

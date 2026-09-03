@@ -8,8 +8,6 @@ services:
     env_file:
       - path: .env.mcp
         required: false
-    environment:
-      OTEL_SDK_DISABLED: "true"
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
