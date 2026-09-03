@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+Dockerfile
+compose.yaml
+README.md

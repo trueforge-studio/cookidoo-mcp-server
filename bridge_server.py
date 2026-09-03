@@ -307,19 +307,5 @@ app.router.add_post("/connect", handle_connect)
 app.router.add_post("/mcp/call", handle_mcp_call)
 app.router.add_get("/", handle_index)
 
-# CORS middleware
-@web.middleware
-async def cors_middleware(request, handler):
-    if request.method == "OPTIONS":
-        resp = web.Response()
-    else:
-        resp = await handler(request)
-    resp.headers["Access-Control-Allow-Origin"] = "*"
-    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
-    return resp
-
-app.middlewares.append(cors_middleware)
-
 if __name__ == "__main__":
     web.run_app(app, host="0.0.0.0", port=8080)

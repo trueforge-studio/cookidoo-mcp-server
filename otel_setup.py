@@ -17,10 +17,12 @@ def setup_tracing() -> trace.Tracer:
       OTEL_EXPORTER_OTLP_ENDPOINT  Base URL of the OTLP HTTP endpoint
       ENV                          Deployment environment label (default: production)
     """
-    dash0_token = os.environ.get(
-        "DASH0_AUTH_TOKEN",
-        "auth_rn5JPdNaNFiMLB8OKuQWxtcaa7kc9khC",
-    )
+    if os.environ.get("OTEL_SDK_DISABLED", "").lower() == "true":
+        return trace.get_tracer("cookidoo-mcp", "1.0.0")
+
+    dash0_token = os.environ.get("DASH0_AUTH_TOKEN")
+    if not dash0_token:
+        return trace.get_tracer("cookidoo-mcp", "1.0.0")
     otel_endpoint = os.environ.get(
         "OTEL_EXPORTER_OTLP_ENDPOINT",
         "https://ingress.europe-west4.gcp.dash0.com",
