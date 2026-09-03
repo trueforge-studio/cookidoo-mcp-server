@@ -33,33 +33,30 @@ Or configure in your MCP client (e.g. Claude Desktop `claude_desktop_config.json
       "env": {
         "COOKIDOO_EMAIL": "your@email.com",
         "COOKIDOO_PASSWORD": "yourpassword",
-        "COOKIDOO_COUNTRY": "DE",
-        "COOKIDOO_LANGUAGE": "de-DE"
+        "COOKIDOO_COUNTRY": "ES",
+        "COOKIDOO_LANGUAGE": "es-ES"
       }
     }
   }
 }
 ```
 
-### Run the MCP server in Docker
+### MCPB bundle for Claude Desktop
 
-Copy `.env.mcp.example` to `.env.mcp` and enter your Cookidoo credentials. Keep
-that file private; it is ignored by Git and excluded from the image build.
+This project includes an MCP Bundle (`.mcpb`) manifest that runs the server
+without Docker. The bundle asks for Cookidoo email and password during
+installation. Country and language are optional and default to `ES` and
+`es-ES`; examples such as `DE` / `de-DE` can be entered when needed.
 
-Configure Claude Desktop to start the container through Docker Compose:
+Install the MCPB CLI and create the bundle from this directory:
 
-```json
-{
-  "mcpServers": {
-    "cookidoo": {
-      "command": "docker",
-      "args": ["compose", "-f", "/Users/joaquinnunez/cookidoo-mcp/compose.yaml", "run", "--rm", "--no-deps", "cookidoo-mcp"]
-    }
-  }
-}
+```bash
+npm install -g @anthropic-ai/mcpb
+mcpb pack
 ```
 
-The `cookidoo-mcp` service communicates over stdio and does not publish a port.
+Then open the generated `.mcpb` file with Claude Desktop. It will install the
+server and securely store the sensitive password configuration.
 
 ## Available Tools
 

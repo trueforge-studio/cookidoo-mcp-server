@@ -37,8 +37,8 @@ class CookidooSession:
             return
         email = os.environ.get("COOKIDOO_EMAIL", "")
         password = os.environ.get("COOKIDOO_PASSWORD", "")
-        country = os.environ.get("COOKIDOO_COUNTRY", "DE")
-        language = os.environ.get("COOKIDOO_LANGUAGE", "de-DE")
+        country = os.environ.get("COOKIDOO_COUNTRY", "ES")
+        language = os.environ.get("COOKIDOO_LANGUAGE", "es-ES")
 
         if not email or not password:
             raise ValueError("COOKIDOO_EMAIL and COOKIDOO_PASSWORD env vars required")

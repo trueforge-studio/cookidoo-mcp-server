@@ -1,0 +1,67 @@
+{
+  "manifest_version": "0.4",
+  "name": "cookidoo-mcp",
+  "display_name": "Cookidoo MCP",
+  "version": "1.0.0",
+  "description": "Search Cookidoo recipes, manage shopping lists and collections, and plan meals.",
+  "author": {
+    "name": "Joaquin Nunez"
+  },
+  "server": {
+    "type": "uv",
+    "entry_point": "mcp_server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "mcp_server.py"
+      ],
+      "env": {
+        "COOKIDOO_EMAIL": "${user_config.email}",
+        "COOKIDOO_PASSWORD": "${user_config.password}",
+        "COOKIDOO_COUNTRY": "${user_config.country}",
+        "COOKIDOO_LANGUAGE": "${user_config.language}"
+      }
+    }
+  },
+  "user_config": {
+    "email": {
+      "type": "string",
+      "title": "Cookidoo email",
+      "description": "The email address used for your Cookidoo account.",
+      "required": true
+    },
+    "password": {
+      "type": "string",
+      "title": "Cookidoo password",
+      "description": "The password used for your Cookidoo account.",
+      "sensitive": true,
+      "required": true
+    },
+    "country": {
+      "type": "string",
+      "title": "Cookidoo country",
+      "description": "Optional country code. Default: ES. Examples: ES, DE, AT, CH, IT, GB.",
+      "default": "ES",
+      "required": false
+    },
+    "language": {
+      "type": "string",
+      "title": "Cookidoo language",
+      "description": "Optional locale. Default: es-ES. Examples: es-ES, de-DE, en-GB, it-IT.",
+      "default": "es-ES",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin", "linux", "win32"],
+    "runtimes": {
+      "python": ">=3.12"
+    }
+  },
+  "keywords": ["cookidoo", "thermomix", "recipes", "meal-planning"],
+  "license": "MIT",
+  "tools_generated": true
+}
