@@ -120,6 +120,14 @@ The `cookidoo-mcp` service communicates over stdio and does not publish a port.
 | `max_preparation_time` | `15`, `30`, `45` | Maximum preparation time in minutes. |
 | `max_total_time` | `15`, `30`, `45` | Maximum total time in minutes. |
 | `portions` | `1`, `2`, `4`, `6`, `8` | Exact portion count; `8` means eight or more. |
+| `tags` | Cookidoo tag values | Filters recipe tags. |
+| `dietary` | Cookidoo dietary values | Filters dietary labels. |
+| `free_of_ingredients` | Values such as `gluten_free`, `lactose_free`, `nut_free` | Filters recipes free of selected ingredients. |
+| `ingredient_categories` | Cookidoo ingredient-category values | Filters ingredient categories. |
+| `nutrition_goals` | Cookidoo nutrition-goal values | Filters nutrition goals. |
+| `cultural` | Cookidoo cultural/origin values | Filters cultural recipe origin. |
+| `health_evaluation` | Cookidoo health-evaluation values | Filters health evaluations. |
+| `recipe_characteristics` | Cookidoo recipe-characteristic values | Filters recipe characteristics. |
 
 ## Credits
 

@@ -114,6 +114,14 @@ async def search_recipes_via_algolia(
     categories: list[str] | None = None,
     tm_models: list[str] | None = None,
     accessories: list[str] | None = None,
+    tags: list[str] | None = None,
+    dietary: list[str] | None = None,
+    free_of_ingredients: list[str] | None = None,
+    ingredient_categories: list[str] | None = None,
+    nutrition_goals: list[str] | None = None,
+    cultural: list[str] | None = None,
+    health_evaluation: list[str] | None = None,
+    recipe_characteristics: list[str] | None = None,
     max_preparation_time: int | None = None,
     max_total_time: int | None = None,
     portions: int | None = None,
@@ -169,6 +177,18 @@ async def search_recipes_via_algolia(
         facet_filters.append([f"tmversion:{model}" for model in tm_models])
     if accessories:
         facet_filters.append([f"accessories:{accessory}" for accessory in accessories])
+    for field, values in (
+        ("tags", tags),
+        ("dietary", dietary),
+        ("freeOfIngredient", free_of_ingredients),
+        ("ingredientCategories", ingredient_categories),
+        ("nutritionGoal", nutrition_goals),
+        ("cultural", cultural),
+        ("healthEvaluation", health_evaluation),
+        ("recipeCharacteristic", recipe_characteristics),
+    ):
+        if values:
+            facet_filters.append([f"{field}:{value}" for value in values])
     facet_filters.extend(
         f"ingredients.filterTitles:{ingredient}"
         for ingredient in include_ingredients or []
@@ -291,6 +311,46 @@ async def list_tools() -> list[Tool]:
                         "type": "array",
                         "items": {"type": "string", "enum": ["blade_cover", "cutter", "cooking_station", "peeler", "thermomix_sensor"]},
                         "description": "Required Cookidoo accessory IDs. Results matching any selected accessory are included.",
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Cookidoo tag values from the selected locale/index.",
+                    },
+                    "dietary": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Dietary facet values from Cookidoo, such as vegetarian or vegan where available.",
+                    },
+                    "free_of_ingredients": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Cookidoo free-of-ingredient values, such as gluten_free, lactose_free, or nut_free.",
+                    },
+                    "ingredient_categories": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Cookidoo ingredient-category values, such as vegetables, dairy, or nutsAndSeeds.",
+                    },
+                    "nutrition_goals": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Nutrition-goal facet values from the selected Cookidoo locale/index.",
+                    },
+                    "cultural": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Cultural/origin facet values from Cookidoo.",
+                    },
+                    "health_evaluation": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Health-evaluation facet values from Cookidoo.",
+                    },
+                    "recipe_characteristics": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Recipe-characteristic facet values from Cookidoo.",
                     },
                     "max_preparation_time": {
                         "type": "integer",
@@ -586,6 +646,14 @@ async def _execute_tool(name: str, arguments: dict[str, Any], cd: Cookidoo) -> l
             categories,
             arguments.get("tm_models"),
             arguments.get("accessories"),
+            arguments.get("tags"),
+            arguments.get("dietary"),
+            arguments.get("free_of_ingredients"),
+            arguments.get("ingredient_categories"),
+            arguments.get("nutrition_goals"),
+            arguments.get("cultural"),
+            arguments.get("health_evaluation"),
+            arguments.get("recipe_characteristics"),
             arguments.get("max_preparation_time"),
             arguments.get("max_total_time"),
             arguments.get("portions"),
