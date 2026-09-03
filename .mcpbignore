@@ -5,8 +5,5 @@ venv/
 __pycache__/
 *.pyc
 *.mcpb
-Dockerfile
-compose.yaml
-.dockerignore
-requirements.txt
+Makefile
 README.md

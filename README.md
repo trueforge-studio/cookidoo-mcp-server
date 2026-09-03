@@ -2,46 +2,7 @@
 
 An MCP server for the Cookidoo (Thermomix) platform.
 
-## Setup
-
-```bash
-pip install -r requirements.txt
-```
-
-Create a `.env` file (optional, for MCP stdio mode):
-```
-COOKIDOO_EMAIL=your@email.com
-COOKIDOO_PASSWORD=yourpassword
-```
-
-## Usage
-
-### MCP stdio server (for AI assistants like Claude)
-
-```bash
-python mcp_server.py
-```
-
-Or configure in your MCP client (e.g. Claude Desktop `claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "cookidoo": {
-      "command": "python",
-      "args": ["mcp_server.py"],
-      "env": {
-        "COOKIDOO_EMAIL": "your@email.com",
-        "COOKIDOO_PASSWORD": "yourpassword",
-        "COOKIDOO_COUNTRY": "ES",
-        "COOKIDOO_LANGUAGE": "es-ES"
-      }
-    }
-  }
-}
-```
-
-### MCPB bundle for Claude Desktop
+## MCPB bundle for Claude Desktop
 
 This project includes an MCP Bundle (`.mcpb`) manifest that runs the server
 without Docker. The bundle asks for Cookidoo email and password during
@@ -51,9 +12,11 @@ installation. Country and language are optional and default to `ES` and
 Install the MCPB CLI and create the bundle from this directory:
 
 ```bash
-npm install -g @anthropic-ai/mcpb
-mcpb pack
+make build
 ```
+
+The command validates the manifest and dependencies, then creates
+`cookidoo-mcp.mcpb`. It requires `uv` and `npx`.
 
 Then open the generated `.mcpb` file with Claude Desktop. It will install the
 server and securely store the sensitive password configuration.
