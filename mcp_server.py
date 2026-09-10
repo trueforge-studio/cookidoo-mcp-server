@@ -887,5 +887,10 @@ async def main():
         )
 
 
-if __name__ == "__main__":
+def run():
+    """Sync entrypoint for the `cookidoo-mcp-server` console script."""
     asyncio.run(main())
+
+
+if __name__ == "__main__":
+    run()
