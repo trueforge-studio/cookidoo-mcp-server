@@ -2,7 +2,23 @@
 
 An MCP server for the Cookidoo (Thermomix) platform.
 
-## MCPB bundle for Claude Desktop
+## Installation
+
+The server is published on PyPI as [`cookidoo-mcp-server`](https://pypi.org/project/cookidoo-mcp-server/)
+and can be run directly with `uvx` — no manual install required.
+
+All clients need these environment variables:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `COOKIDOO_EMAIL` | Yes | — | Your Cookidoo account email |
+| `COOKIDOO_PASSWORD` | Yes | — | Your Cookidoo account password |
+| `COOKIDOO_COUNTRY` | No | `ES` | Country code, e.g. `DE`, `AT`, `CH`, `IT`, `GB` |
+| `COOKIDOO_LANGUAGE` | No | `es-ES` | Locale, e.g. `de-DE`, `en-GB`, `it-IT` |
+
+### Claude Desktop
+
+**Option A — MCPB bundle (recommended, stores the password securely):**
 
 This project includes an MCP Bundle (`.mcpb`) manifest that runs the server
 without Docker. The bundle asks for Cookidoo email and password during
@@ -20,6 +36,54 @@ The command validates the manifest and dependencies, then creates
 
 Then open the generated `.mcpb` file with Claude Desktop. It will install the
 server and securely store the sensitive password configuration.
+
+**Option B — manual config (`claude_desktop_config.json`):**
+
+```json
+{
+  "mcpServers": {
+    "cookidoo": {
+      "command": "uvx",
+      "args": ["cookidoo-mcp-server"],
+      "env": {
+        "COOKIDOO_EMAIL": "your-email",
+        "COOKIDOO_PASSWORD": "your-password",
+        "COOKIDOO_COUNTRY": "ES",
+        "COOKIDOO_LANGUAGE": "es-ES"
+      }
+    }
+  }
+}
+```
+
+### ChatGPT / Codex
+
+**Option A — CLI:**
+
+```bash
+codex mcp add cookidoo \
+  --env COOKIDOO_EMAIL=your-email \
+  --env COOKIDOO_PASSWORD=your-password \
+  --env COOKIDOO_COUNTRY=ES \
+  --env COOKIDOO_LANGUAGE=es-ES \
+  -- uvx cookidoo-mcp-server
+```
+
+Verify it's loaded with `codex mcp list`.
+
+**Option B — `~/.codex/config.toml`:**
+
+```toml
+[mcp_servers.cookidoo]
+command = "uvx"
+args = ["cookidoo-mcp-server"]
+
+[mcp_servers.cookidoo.env]
+COOKIDOO_EMAIL = "your-email"
+COOKIDOO_PASSWORD = "your-password"
+COOKIDOO_COUNTRY = "ES"
+COOKIDOO_LANGUAGE = "es-ES"
+```
 
 ## Available Tools
 
